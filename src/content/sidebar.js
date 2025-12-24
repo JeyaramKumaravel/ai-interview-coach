@@ -96,8 +96,8 @@ const Sidebar = {
     const widget = document.getElementById('sc-widget');
     const launcher = document.getElementById('sc-launcher');
 
+    widget.style.display = '';  // Restore widget display
     launcher.style.display = 'flex';
-    // Widget stays hidden until clicked
     this.isHidden = false;
 
     console.log('👁️ Stealth mode OFF');
