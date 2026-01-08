@@ -119,6 +119,26 @@
       </div>
 
       <div class="form-group">
+        <label>Embedding Model</label>
+        <div class="select-wrapper">
+          <select id="embeddingProvider">
+            <option value="ollama">🖥️ Ollama (Local)</option>
+            <option value="google">☁️ Google (text-embedding-004)</option>
+          </select>
+          <span class="select-arrow">▼</span>
+        </div>
+      </div>
+
+      <div id="googleKeySection" class="form-group" style="display: none;">
+        <label>Google API Key (for embeddings)</label>
+        <div class="input-wrapper">
+          <input type="password" id="googleApiKey" placeholder="Enter your Google API key..." />
+          <button type="button" id="toggleGoogleKey" class="toggle-btn" title="Show/Hide">👁️</button>
+        </div>
+        <small class="hint">Same key as Gemini provider</small>
+      </div>
+
+      <div class="form-group">
         <label>Document Title</label>
         <input type="text" id="docTitle" placeholder="e.g., Product Pricing Guide" />
       </div>

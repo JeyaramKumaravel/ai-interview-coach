@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const uploadBtn = document.getElementById('uploadBtn');
   const fileName = document.getElementById('fileName');
 
+  // Embedding provider elements
+  const embeddingProvider = document.getElementById('embeddingProvider');
+  const googleKeySection = document.getElementById('googleKeySection');
+  const googleApiKey = document.getElementById('googleApiKey');
+  const toggleGoogleKey = document.getElementById('toggleGoogleKey');
+
   // Load saved settings
   const settings = await StorageUtils.getSettings();
   const { apiKey, prompt, tone, provider, model } = settings;
@@ -46,9 +52,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const toneRadio = document.getElementById(`tone-${tone.toLowerCase()}`);
   if (toneRadio) toneRadio.checked = true;
 
-  // Check RAG server status
+  // Check RAG server status and load embedding settings
   checkRagStatus();
   loadDocuments();
+  loadEmbeddingSettings();
 
   // Provider change handler
   providerSelect.addEventListener('change', () => {
@@ -70,6 +77,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   // RAG Toggle
   ragEnabled.addEventListener('change', async () => {
     await chrome.storage.local.set({ ragEnabled: ragEnabled.checked });
+  });
+
+  // Embedding Provider Toggle
+  embeddingProvider.addEventListener('change', async () => {
+    updateGoogleKeyVisibility();
+    await saveEmbeddingSettings();
+  });
+
+  // Toggle Google API key visibility
+  toggleGoogleKey.addEventListener('click', () => {
+    const isPassword = googleApiKey.type === 'password';
+    googleApiKey.type = isPassword ? 'text' : 'password';
+    toggleGoogleKey.textContent = isPassword ? '🙈' : '👁️';
+  });
+
+  // Save Google API key on blur
+  googleApiKey.addEventListener('blur', async () => {
+    await saveEmbeddingSettings();
   });
 
   // File Upload Button
@@ -213,13 +238,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ==================== RAG Functions ====================
 
+  // Show/hide Google API key based on selected provider
+  function updateGoogleKeyVisibility() {
+    if (embeddingProvider.value === 'google') {
+      googleKeySection.style.display = 'flex';
+    } else {
+      googleKeySection.style.display = 'none';
+    }
+  }
+
+  // Load embedding settings from server
+  async function loadEmbeddingSettings() {
+    try {
+      const response = await fetch('http://localhost:8000/settings/embedding');
+      if (response.ok) {
+        const data = await response.json();
+        embeddingProvider.value = data.provider || 'ollama';
+        updateGoogleKeyVisibility();
+
+        // Load Google API key from local storage
+        const stored = await chrome.storage.local.get(['googleEmbeddingKey']);
+        if (stored.googleEmbeddingKey) {
+          googleApiKey.value = stored.googleEmbeddingKey;
+        }
+      }
+    } catch (err) {
+      console.log('Could not load embedding settings:', err);
+    }
+  }
+
+  // Save embedding settings to server
+  async function saveEmbeddingSettings() {
+    try {
+      const key = googleApiKey.value.trim();
+
+      // Save key to local storage
+      await chrome.storage.local.set({ googleEmbeddingKey: key });
+
+      // Send settings to server
+      const response = await fetch('http://localhost:8000/settings/embedding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: embeddingProvider.value,
+          google_api_key: key
+        })
+      });
+
+      if (response.ok) {
+        showStatus(`✅ Embedding provider set to ${embeddingProvider.value}`, 'success');
+        setTimeout(hideStatus, 2000);
+      }
+    } catch (err) {
+      showStatus(`❌ Failed to save embedding settings`, 'error');
+    }
+  }
+
   async function checkRagStatus() {
     try {
       const response = await chrome.runtime.sendMessage({ action: "RAG_HEALTH" });
 
       if (response.success) {
         ragStatus.className = 'rag-status connected';
-        ragStatusText.textContent = `Server running • ${response.documents || 0} chunks`;
+        const embeddingInfo = response.embedding_provider ? ` • ${response.embedding_provider}` : '';
+        ragStatusText.textContent = `Server running • ${response.documents || 0} chunks${embeddingInfo}`;
       } else {
         ragStatus.className = 'rag-status error';
         ragStatusText.textContent = 'Server offline';

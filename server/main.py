@@ -1,6 +1,6 @@
 """
 FastAPI RAG Server for Sales Coach Extension
-Uses Ollama for embeddings and PostgreSQL for vector storage
+Uses Ollama or Google for embeddings and PostgreSQL for vector storage
 """
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,14 @@ from typing import List, Optional
 import ollama
 import database
 import io
+import os
+
+# Google Generative AI for embeddings
+try:
+    import google.generativeai as genai
+    GOOGLE_AVAILABLE = True
+except ImportError:
+    GOOGLE_AVAILABLE = False
 
 app = FastAPI(title="Sales Coach RAG API", version="1.0.0")
 
@@ -21,8 +29,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ollama embedding model
-EMBED_MODEL = "nomic-embed-text"
+# Embedding configuration - stored in memory (could be persisted to DB)
+EMBEDDING_CONFIG = {
+    "provider": os.getenv("EMBEDDING_PROVIDER", "ollama"),  # "ollama" or "google"
+    "google_api_key": os.getenv("GOOGLE_API_KEY", ""),
+    "ollama_model": "nomic-embed-text",
+    "google_model": "models/text-embedding-004"
+}
+
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
 
@@ -40,6 +54,10 @@ class DocumentResponse(BaseModel):
     title: str
     content: str
     similarity: Optional[float] = None
+
+class EmbeddingSettings(BaseModel):
+    provider: str  # "ollama" or "google"
+    google_api_key: Optional[str] = None
 
 # Utility functions
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
@@ -68,13 +86,41 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     
     return [c for c in chunks if c]  # Remove empty chunks
 
-def get_embedding(text: str) -> List[float]:
+def get_embedding_ollama(text: str) -> List[float]:
     """Generate embedding using Ollama nomic-embed-text"""
     try:
-        response = ollama.embeddings(model=EMBED_MODEL, prompt=text)
+        response = ollama.embeddings(model=EMBEDDING_CONFIG["ollama_model"], prompt=text)
         return response['embedding']
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Embedding error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ollama embedding error: {str(e)}. Make sure Ollama is running.")
+
+def get_embedding_google(text: str) -> List[float]:
+    """Generate embedding using Google text-embedding-004"""
+    if not GOOGLE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="Google Generative AI library not installed")
+    
+    if not EMBEDDING_CONFIG["google_api_key"]:
+        raise HTTPException(status_code=400, detail="Google API key not configured")
+    
+    try:
+        genai.configure(api_key=EMBEDDING_CONFIG["google_api_key"])
+        result = genai.embed_content(
+            model=EMBEDDING_CONFIG["google_model"],
+            content=text,
+            task_type="retrieval_document"
+        )
+        return result['embedding']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google embedding error: {str(e)}")
+
+def get_embedding(text: str) -> List[float]:
+    """Generate embedding using configured provider"""
+    provider = EMBEDDING_CONFIG["provider"]
+    
+    if provider == "google":
+        return get_embedding_google(text)
+    else:  # Default to ollama
+        return get_embedding_ollama(text)
 
 # API Endpoints
 @app.on_event("startup")
@@ -95,9 +141,46 @@ async def health():
     """Health check with stats"""
     try:
         count = database.get_document_count()
-        return {"status": "healthy", "documents": count}
+        return {
+            "status": "healthy", 
+            "documents": count,
+            "embedding_provider": EMBEDDING_CONFIG["provider"],
+            "google_available": GOOGLE_AVAILABLE
+        }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+# Embedding Settings Endpoints
+@app.get("/settings/embedding")
+async def get_embedding_settings():
+    """Get current embedding settings"""
+    return {
+        "provider": EMBEDDING_CONFIG["provider"],
+        "google_configured": bool(EMBEDDING_CONFIG["google_api_key"]),
+        "google_available": GOOGLE_AVAILABLE,
+        "ollama_model": EMBEDDING_CONFIG["ollama_model"],
+        "google_model": EMBEDDING_CONFIG["google_model"]
+    }
+
+@app.post("/settings/embedding")
+async def set_embedding_settings(settings: EmbeddingSettings):
+    """Update embedding settings"""
+    if settings.provider not in ["ollama", "google"]:
+        raise HTTPException(status_code=400, detail="Invalid provider. Use 'ollama' or 'google'")
+    
+    if settings.provider == "google" and not GOOGLE_AVAILABLE:
+        raise HTTPException(status_code=400, detail="Google Generative AI library not installed")
+    
+    EMBEDDING_CONFIG["provider"] = settings.provider
+    
+    if settings.google_api_key is not None:
+        EMBEDDING_CONFIG["google_api_key"] = settings.google_api_key
+    
+    return {
+        "success": True,
+        "provider": EMBEDDING_CONFIG["provider"],
+        "google_configured": bool(EMBEDDING_CONFIG["google_api_key"])
+    }
 
 @app.post("/documents")
 async def add_document(doc: DocumentInput):
@@ -120,7 +203,8 @@ async def add_document(doc: DocumentInput):
             "success": True,
             "title": doc.title,
             "chunks": len(chunks),
-            "ids": doc_ids
+            "ids": doc_ids,
+            "embedding_provider": EMBEDDING_CONFIG["provider"]
         }
     except HTTPException:
         raise
@@ -162,7 +246,8 @@ async def search_documents(query: SearchQuery):
         return {
             "query": query.query,
             "results": results,
-            "count": len(results)
+            "count": len(results),
+            "embedding_provider": EMBEDDING_CONFIG["provider"]
         }
     except HTTPException:
         raise
@@ -174,7 +259,11 @@ async def generate_embedding(text: str):
     """Generate embedding for text"""
     try:
         embedding = get_embedding(text)
-        return {"embedding": embedding, "dimensions": len(embedding)}
+        return {
+            "embedding": embedding, 
+            "dimensions": len(embedding),
+            "provider": EMBEDDING_CONFIG["provider"]
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
