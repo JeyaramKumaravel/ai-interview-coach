@@ -2,6 +2,7 @@
 
 const Sidebar = {
   isHidden: false, // Stealth mode flag
+  sidebarHtml: null, // Cache the HTML for re-injection
 
   init() {
     // Load the HTML for the sidebar
@@ -9,13 +10,59 @@ const Sidebar = {
     fetch(url)
       .then(response => response.text())
       .then(html => {
-        document.body.insertAdjacentHTML('beforeend', html);
-        this.attachListeners();
-        this.makeWidgetDraggable();
-        this.makeLauncherDraggable();
-        this.loadPosition();
-        this.setupStealthMode();
+        this.sidebarHtml = html; // Cache for potential re-injection
+        this.injectSidebar();
+        this.startPresenceCheck();
       });
+  },
+
+  // Inject the sidebar HTML into the page
+  injectSidebar() {
+    // Remove existing if present (to avoid duplicates)
+    const existingLauncher = document.getElementById('sc-launcher');
+    const existingWidget = document.getElementById('sc-widget');
+    if (existingLauncher) existingLauncher.remove();
+    if (existingWidget) existingWidget.remove();
+
+    document.body.insertAdjacentHTML('beforeend', this.sidebarHtml);
+    this.attachListeners();
+    this.makeWidgetDraggable();
+    this.makeLauncherDraggable();
+    this.loadPosition();
+    this.setupStealthMode();
+  },
+
+  // Periodically check if launcher is still in the DOM
+  startPresenceCheck() {
+    // Check every 2 seconds
+    setInterval(() => {
+      this.ensureLauncherPresence();
+    }, 2000);
+
+    // Also check on visibility change (when tab becomes active)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => this.ensureLauncherPresence(), 500);
+      }
+    });
+  },
+
+  // Ensure launcher button exists in the DOM
+  ensureLauncherPresence() {
+    const launcher = document.getElementById('sc-launcher');
+    const widget = document.getElementById('sc-widget');
+
+    // If launcher is missing and we're not in stealth mode, re-inject
+    if (!launcher && !this.isHidden && this.sidebarHtml) {
+      console.log('🔄 Sales Coach: Launcher missing, re-injecting...');
+      this.injectSidebar();
+    }
+
+    // If widget is missing but launcher exists, that's also a problem
+    if (launcher && !widget && this.sidebarHtml) {
+      console.log('🔄 Sales Coach: Widget missing, re-injecting...');
+      this.injectSidebar();
+    }
   },
 
   // Setup stealth mode - hide when screen sharing
