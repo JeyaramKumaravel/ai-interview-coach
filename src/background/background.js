@@ -24,19 +24,19 @@ const PROVIDERS_CONFIG = {
   gemini: {
     name: "Google Gemini",
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-    defaultModel: "gemini-1.5-flash",
+    defaultModel: "models/gemini-2.5-flash",
     requiresKey: true
   },
   openrouter: {
     name: "OpenRouter",
     endpoint: "https://openrouter.ai/api/v1/chat/completions",
-    defaultModel: "google/gemini-flash-1.5",
+    defaultModel: "openai/gpt-oss-20b:free",
     requiresKey: true
   },
   groq: {
     name: "Groq",
     endpoint: "https://api.groq.com/openai/v1/chat/completions",
-    defaultModel: "llama-3.1-8b-instant",
+    defaultModel: "llama-3.3-70b-versatile",
     requiresKey: true
   }
 };

@@ -32,24 +32,24 @@ const CONSTANTS = {
     gemini: {
       name: "Google Gemini",
       endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-      defaultModel: "gemini-1.5-flash",
-      models: ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
+      defaultModel: "models/gemini-2.5-flash",
+      models: ["models/gemini-2.5-flash"],
       keyPrefix: "AI",
       requiresKey: true
     },
     openrouter: {
       name: "OpenRouter",
       endpoint: "https://openrouter.ai/api/v1/chat/completions",
-      defaultModel: "google/gemini-flash-1.5",
-      models: ["google/gemini-flash-1.5", "anthropic/claude-3-haiku", "meta-llama/llama-3.1-8b-instruct", "openai/gpt-4o-mini"],
+      defaultModel: "openai/gpt-oss-20b:free",
+      models: ["openai/gpt-oss-20b:free", "nvidia/nemotron-nano-12b-v2-vl:free", "mistralai/mistral-small-3.1-24b-instruct:free", "google/gemma-3-27b-it:free", "deepseek/deepseek-r1-distill-qwen-14b", "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"],
       keyPrefix: "sk-or-",
       requiresKey: true
     },
     groq: {
       name: "Groq",
       endpoint: "https://api.groq.com/openai/v1/chat/completions",
-      defaultModel: "llama-3.1-8b-instant",
-      models: ["llama-3.1-8b-instant", "llama-3.1-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"],
+      defaultModel: "llama-3.3-70b-versatile",
+      models: ["openai/gpt-oss-20b", "qwen/qwen3-32b", "llama-3.3-70b-versatile"],
       keyPrefix: "gsk_",
       requiresKey: true
     }
