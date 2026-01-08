@@ -101,13 +101,20 @@ const Sidebar = {
   },
 
   checkScreenSharing() {
-    // Detect if user is presenting (Google Meet specific selectors)
+    // Detect if user is presenting (Google Meet + Microsoft Teams selectors)
     const isPresentingIndicators = [
+      // Google Meet
       '[data-is-presenting="true"]',
       '[aria-label*="presenting"]',
       '[aria-label*="Stop sharing"]',
       '[aria-label*="You are presenting"]',
-      '.screen-share-active'
+      '.screen-share-active',
+      // Microsoft Teams
+      '[data-tid="share-stop-button"]',
+      '[aria-label*="Stop presenting"]',
+      '[aria-label*="You\'re sharing"]',
+      '[data-tid="screen-sharing-indicator"]',
+      '.ts-calling-screen-share'
     ];
 
     const isPresenting = isPresentingIndicators.some(selector =>

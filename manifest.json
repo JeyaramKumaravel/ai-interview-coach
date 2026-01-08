@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI Interview Coach - AI Assistant",
   "version": "1.0.0",
-  "description": "Real-time AI interview coaching for Google Meet.",
+  "description": "Real-time AI interview coaching for Google Meet and Microsoft Teams.",
   "permissions": [
     "storage",
     "activeTab",
@@ -10,6 +10,8 @@
   ],
   "host_permissions": [
     "https://meet.google.com/*",
+    "https://teams.microsoft.com/*",
+    "https://teams.live.com/*",
     "http://localhost:8000/*"
   ],
   "background": {
@@ -39,6 +41,22 @@
       "css": [
         "src/content/sidebar.css"
       ]
+    },
+    {
+      "matches": [
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*"
+      ],
+      "js": [
+        "src/utils/constants.js",
+        "src/utils/storage.js",
+        "src/content/teams-captions.js",
+        "src/content/sidebar.js",
+        "src/content/content-script.js"
+      ],
+      "css": [
+        "src/content/sidebar.css"
+      ]
     }
   ],
   "web_accessible_resources": [
@@ -48,7 +66,9 @@
         "assets/*"
       ],
       "matches": [
-        "https://meet.google.com/*"
+        "https://meet.google.com/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*"
       ]
     }
   ]
