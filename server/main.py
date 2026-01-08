@@ -2,6 +2,9 @@
 FastAPI RAG Server for Sales Coach Extension
 Uses Ollama or Google for embeddings and PostgreSQL for vector storage
 """
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
