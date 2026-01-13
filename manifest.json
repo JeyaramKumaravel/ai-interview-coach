@@ -12,7 +12,9 @@
     "https://meet.google.com/*",
     "https://teams.microsoft.com/*",
     "https://teams.live.com/*",
-    "http://localhost:8000/*"
+    "http://localhost:8000/*",
+    "https://*.firebaseio.com/*",
+    "https://*.googleapis.com/*"
   ],
   "background": {
     "service_worker": "src/background/background.js",

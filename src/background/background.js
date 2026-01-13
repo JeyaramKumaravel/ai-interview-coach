@@ -78,6 +78,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleRagHealth(sendResponse);
     return true;
   }
+
+  // Cloud Sync Actions
+  if (request.action === "CLOUD_HEALTH") {
+    handleCloudHealth(sendResponse);
+    return true;
+  }
+
+  if (request.action === "CLOUD_SYNC_ALL") {
+    handleCloudSyncAll(sendResponse);
+    return true;
+  }
 });
 
 // ==================== RAG Functions ====================
@@ -467,4 +478,79 @@ async function callGroq(apiKey, model, systemPrompt) {
     return { error: "Groq Error: " + data.error.message };
   }
   return { text: data.choices[0].message.content };
+}
+
+// ==================== Cloud Sync Functions ====================
+
+// Cloud sync configuration
+const CLOUD_CONFIG = {
+  FIREBASE_CONFIG_URL: chrome.runtime.getURL('src/utils/firebase-config.js')
+};
+
+// Dynamic import helper for ES modules
+async function loadCloudDB() {
+  try {
+    const module = await import(chrome.runtime.getURL('src/utils/cloud-db.js'));
+    return module.CloudDB;
+  } catch (err) {
+    console.log("CloudDB module not available:", err);
+    return null;
+  }
+}
+
+async function handleCloudHealth(sendResponse) {
+  try {
+    const CloudDB = await loadCloudDB();
+    if (!CloudDB) {
+      sendResponse({ success: false, status: "not_configured", message: "Cloud module not loaded" });
+      return;
+    }
+
+    const result = await CloudDB.healthCheck();
+    sendResponse(result);
+  } catch (err) {
+    sendResponse({ success: false, status: "error", message: err.message });
+  }
+}
+
+async function handleCloudSyncAll(sendResponse) {
+  try {
+    const CloudDB = await loadCloudDB();
+    if (!CloudDB) {
+      sendResponse({ success: false, error: "Cloud module not loaded" });
+      return;
+    }
+
+    // Get documents from local RAG server
+    let localDocs = [];
+    try {
+      const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents`);
+      if (response.ok) {
+        const data = await response.json();
+        localDocs = data.documents || [];
+      }
+    } catch (err) {
+      console.log("Local server not available, syncing from cloud only");
+    }
+
+    // Sync each document to cloud
+    let syncedCount = 0;
+    for (const doc of localDocs) {
+      try {
+        // Get full document content
+        const fullDoc = await fetch(`${RAG_CONFIG.SERVER_URL}/documents/${encodeURIComponent(doc.title)}`);
+        if (fullDoc.ok) {
+          const docData = await fullDoc.json();
+          await CloudDB.saveDocument(doc.title, docData.content || '', docData.chunks || []);
+          syncedCount++;
+        }
+      } catch (err) {
+        console.log(`Failed to sync document ${doc.title}:`, err);
+      }
+    }
+
+    sendResponse({ success: true, documents: syncedCount });
+  } catch (err) {
+    sendResponse({ success: false, error: err.message });
+  }
 }

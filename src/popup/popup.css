@@ -139,6 +139,7 @@ body {
         opacity: 0;
         transform: translateY(-4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -651,4 +652,36 @@ textarea {
 
 .file-name.success {
     color: var(--success);
+}
+
+/* Cloud Sync Section */
+.cloud-sync-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.cloud-sync-section .section-header {
+    margin-bottom: 6px;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.cloud-sync-section .rag-status.syncing .rag-dot {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
 }

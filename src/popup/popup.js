@@ -37,6 +37,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
 
+  // Cloud Sync Elements
+  const cloudSyncEnabled = document.getElementById('cloudSyncEnabled');
+  const cloudStatus = document.getElementById('cloudStatus');
+  const cloudStatusText = document.getElementById('cloudStatusText');
+  const syncNowBtn = document.getElementById('syncNowBtn');
+
   // Tab Navigation
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -545,5 +551,83 @@ document.addEventListener('DOMContentLoaded', async () => {
       card.style.opacity = '1';
       card.style.transform = 'translateY(0)';
     }, 100 + (index * 100));
+  });
+
+  // ==================== Cloud Sync Functions ====================
+
+  // Check cloud sync status
+  async function checkCloudStatus() {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: "CLOUD_HEALTH" });
+
+      if (response.success) {
+        cloudStatus.className = 'rag-status connected';
+        cloudStatusText.textContent = `Connected • ${response.documents || 0} docs`;
+        syncNowBtn.style.display = 'flex';
+      } else if (response.status === 'not_configured') {
+        cloudStatus.className = 'rag-status';
+        cloudStatusText.textContent = 'Not configured';
+        syncNowBtn.style.display = 'none';
+      } else {
+        cloudStatus.className = 'rag-status error';
+        cloudStatusText.textContent = response.message || 'Connection failed';
+        syncNowBtn.style.display = 'none';
+      }
+    } catch (err) {
+      cloudStatus.className = 'rag-status';
+      cloudStatusText.textContent = 'Not available';
+      syncNowBtn.style.display = 'none';
+    }
+  }
+
+  // Load cloud sync preference
+  const cloudSettings = await chrome.storage.local.get(['cloudSyncEnabled']);
+  cloudSyncEnabled.checked = cloudSettings.cloudSyncEnabled === true;
+
+  // Check cloud status on load
+  if (cloudSyncEnabled.checked) {
+    checkCloudStatus();
+  }
+
+  // Cloud sync toggle handler
+  cloudSyncEnabled.addEventListener('change', async () => {
+    await chrome.storage.local.set({ cloudSyncEnabled: cloudSyncEnabled.checked });
+    if (cloudSyncEnabled.checked) {
+      checkCloudStatus();
+    } else {
+      cloudStatus.className = 'rag-status';
+      cloudStatusText.textContent = 'Disabled';
+      syncNowBtn.style.display = 'none';
+    }
+  });
+
+  // Sync now button handler
+  syncNowBtn.addEventListener('click', async () => {
+    syncNowBtn.disabled = true;
+    const originalContent = syncNowBtn.innerHTML;
+    syncNowBtn.innerHTML = '<span class="loading-spinner"></span><span>Syncing...</span>';
+    cloudStatus.className = 'rag-status syncing';
+    cloudStatusText.textContent = 'Syncing...';
+
+    try {
+      const response = await chrome.runtime.sendMessage({ action: "CLOUD_SYNC_ALL" });
+
+      if (response.success) {
+        showStatus(`✅ Synced ${response.documents || 0} documents to cloud`, 'success');
+        checkCloudStatus();
+        setTimeout(hideStatus, 3000);
+      } else {
+        showStatus(`❌ Sync failed: ${response.error}`, 'error');
+        cloudStatus.className = 'rag-status error';
+        cloudStatusText.textContent = 'Sync failed';
+      }
+    } catch (err) {
+      showStatus(`❌ Sync error: ${err.message}`, 'error');
+      cloudStatus.className = 'rag-status error';
+      cloudStatusText.textContent = 'Error';
+    } finally {
+      syncNowBtn.disabled = false;
+      syncNowBtn.innerHTML = originalContent;
+    }
   });
 });

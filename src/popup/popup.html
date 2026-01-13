@@ -136,6 +136,26 @@
             <span id="ragStatusText">Checking server...</span>
           </div>
 
+          <!-- Cloud Sync Section -->
+          <div class="cloud-sync-section">
+            <div class="section-header">
+              <span class="section-icon">☁️</span>
+              <h2>Cloud Sync</h2>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cloudSyncEnabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div id="cloudStatus" class="rag-status">
+              <span class="rag-dot"></span>
+              <span id="cloudStatusText">Not configured</span>
+            </div>
+            <button id="syncNowBtn" class="btn btn-outline btn-small" style="display: none;">
+              <span class="btn-icon">🔄</span>
+              <span>Sync Now</span>
+            </button>
+          </div>
+
           <div class="form-group">
             <label>Embedding Model</label>
             <div class="select-wrapper">
