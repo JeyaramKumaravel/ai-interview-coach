@@ -387,14 +387,16 @@ async function callOpenAI(apiKey, model, systemPrompt) {
 }
 
 async function callGemini(apiKey, model, systemPrompt) {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // Strip 'models/' prefix if present since URL already includes it
+  const modelName = model.replace(/^models\//, '');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: systemPrompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 256 }
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
     })
   });
 
@@ -418,20 +420,28 @@ async function callOpenRouter(apiKey, model, systemPrompt) {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
       "HTTP-Referer": chrome.runtime.getURL(""),
-      "X-Title": "Sales Coach Extension"
+      "X-Title": "AI Interview Coach"
     },
     body: JSON.stringify({
       model: model,
-      messages: [{ role: "system", content: systemPrompt }]
+      messages: [
+        { role: "system", content: "You are an expert interview coach. Answer concisely and professionally." },
+        { role: "user", content: systemPrompt }
+      ]
     })
   });
 
   const data = await response.json();
 
   if (data.error) {
-    return { error: "OpenRouter Error: " + (data.error.message || data.error) };
+    return { error: "OpenRouter Error: " + (data.error.message || JSON.stringify(data.error)) };
   }
-  return { text: data.choices[0].message.content };
+
+  if (data.choices && data.choices[0]?.message?.content) {
+    return { text: data.choices[0].message.content };
+  }
+
+  return { error: "OpenRouter: No response generated" };
 }
 
 async function callGroq(apiKey, model, systemPrompt) {
