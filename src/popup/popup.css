@@ -25,7 +25,8 @@
 }
 
 body {
-    width: 320px;
+    width: 100%;
+    min-width: 320px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(20px);
@@ -622,7 +623,7 @@ textarea {
 }
 
 .btn-ghost {
-    padding: 6px 12px;
+    padding: 10px 19px;
     background: transparent;
     border: 1px dashed var(--glass-border);
     border-radius: var(--radius-sm);

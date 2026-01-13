@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://meet.google.com/*",
@@ -20,8 +21,11 @@
     "service_worker": "src/background/background.js",
     "type": "module"
   },
+  "side_panel": {
+    "default_path": "src/popup/popup.html"
+  },
   "action": {
-    "default_popup": "src/popup/popup.html",
+    "default_title": "Open AI Interview Coach",
     "default_icon": {
       "16": "assets/icon16.png",
       "48": "assets/icon48.png",

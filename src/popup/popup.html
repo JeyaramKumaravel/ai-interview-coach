@@ -192,19 +192,18 @@
               placeholder="Paste your sales scripts, FAQs, or product info..."></textarea>
           </div>
 
-          <div class="upload-section">
+          <div class="upload-section" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <input type="file" id="fileInput" accept=".txt,.md,.pdf,.docx,.pptx" hidden>
             <button id="uploadBtn" class="btn btn-ghost">
               <span class="btn-icon">📁</span>
               <span>Upload File</span>
             </button>
+            <button id="addDocBtn" class="btn btn-outline">
+              <span class="btn-icon">➕</span>
+              <span>Add to Database</span>
+            </button>
             <span id="fileName" class="file-name"></span>
           </div>
-
-          <button id="addDocBtn" class="btn btn-outline">
-            <span class="btn-icon">➕</span>
-            <span>Add to Knowledge Base</span>
-          </button>
 
           <div class="doc-list">
             <label>Stored Documents (<span id="docCount">0</span>)</label>

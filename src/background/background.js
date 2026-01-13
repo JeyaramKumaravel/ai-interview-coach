@@ -4,6 +4,12 @@
 import { FIREBASE_CONFIG, RAG_CONFIG } from '../config.js';
 import { CloudDB } from '../utils/cloud-db.js';
 
+// Enable Side Panel behavior (opens on click)
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.log("Side panel setup error:", error));
+}
+
 // Provider configurations for background worker
 const PROVIDERS_CONFIG = {
   pollinations: {
