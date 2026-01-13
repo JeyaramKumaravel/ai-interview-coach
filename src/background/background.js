@@ -104,52 +104,116 @@ async function handleRagHealth(sendResponse) {
 }
 
 async function handleAddDocument(payload, sendResponse) {
-  try {
-    const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: payload.title,
-        content: payload.content
-      })
-    });
+  // Check storage mode preference
+  const settings = await chrome.storage.local.get(['storageMode']);
+  const storageMode = settings.storageMode || 'local';
 
-    const data = await response.json();
+  if (storageMode === 'cloud') {
+    // Use cloud storage (Firebase)
+    try {
+      const CloudDB = await loadCloudDB();
+      if (!CloudDB) {
+        sendResponse({ success: false, error: "Cloud not configured. Check firebase-config.js" });
+        return;
+      }
 
-    if (!response.ok) {
-      sendResponse({ success: false, error: data.detail || "Failed to add document" });
-    } else {
-      sendResponse({ success: true, ...data });
+      // Simple chunking for cloud storage
+      const chunks = payload.content.match(/.{1,500}/g) || [];
+      const result = await CloudDB.saveDocument(payload.title, payload.content, chunks);
+
+      if (result.success) {
+        sendResponse({ success: true, chunks: result.chunks || chunks.length });
+      } else {
+        sendResponse({ success: false, error: result.error || "Failed to save to cloud" });
+      }
+    } catch (err) {
+      sendResponse({ success: false, error: "Cloud error: " + err.message });
     }
-  } catch (err) {
-    sendResponse({ success: false, error: "RAG server not running. Start with: uvicorn main:app" });
+  } else {
+    // Use local RAG server
+    try {
+      const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: payload.title,
+          content: payload.content
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        sendResponse({ success: false, error: data.detail || "Failed to add document" });
+      } else {
+        sendResponse({ success: true, ...data });
+      }
+    } catch (err) {
+      sendResponse({ success: false, error: "RAG server not running. Start with: uvicorn main:app" });
+    }
   }
 }
 
 async function handleGetDocuments(sendResponse) {
-  try {
-    const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents`);
-    const data = await response.json();
-    sendResponse({ success: true, ...data });
-  } catch (err) {
-    sendResponse({ success: false, error: "RAG server not running", documents: [] });
+  // Check storage mode preference
+  const settings = await chrome.storage.local.get(['storageMode']);
+  const storageMode = settings.storageMode || 'local';
+
+  if (storageMode === 'cloud') {
+    try {
+      const CloudDB = await loadCloudDB();
+      if (!CloudDB) {
+        sendResponse({ success: false, error: "Cloud not configured", documents: [] });
+        return;
+      }
+      const result = await CloudDB.getDocuments();
+      sendResponse(result);
+    } catch (err) {
+      sendResponse({ success: false, error: err.message, documents: [] });
+    }
+  } else {
+    try {
+      const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents`);
+      const data = await response.json();
+      sendResponse({ success: true, ...data });
+    } catch (err) {
+      sendResponse({ success: false, error: "RAG server not running", documents: [] });
+    }
   }
 }
 
 async function handleDeleteDocument(payload, sendResponse) {
-  try {
-    const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents/${encodeURIComponent(payload.title)}`, {
-      method: "DELETE"
-    });
+  // Check storage mode preference
+  const settings = await chrome.storage.local.get(['storageMode']);
+  const storageMode = settings.storageMode || 'local';
 
-    if (!response.ok) {
-      const data = await response.json();
-      sendResponse({ success: false, error: data.detail || "Failed to delete" });
-    } else {
-      sendResponse({ success: true });
+  if (storageMode === 'cloud') {
+    try {
+      const CloudDB = await loadCloudDB();
+      if (!CloudDB) {
+        sendResponse({ success: false, error: "Cloud not configured" });
+        return;
+      }
+      const result = await CloudDB.deleteDocument(payload.title);
+      sendResponse(result);
+    } catch (err) {
+      sendResponse({ success: false, error: err.message });
     }
-  } catch (err) {
-    sendResponse({ success: false, error: "RAG server not running" });
+  } else {
+    try {
+      const response = await fetch(`${RAG_CONFIG.SERVER_URL}/documents/${encodeURIComponent(payload.title)}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        sendResponse({ success: false, error: data.detail || "Failed to delete" });
+      } else {
+        sendResponse({ success: true });
+      }
+    } catch (err) {
+      sendResponse({ success: false, error: "RAG server not running" });
+    }
   }
 }
 

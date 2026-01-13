@@ -654,34 +654,58 @@ textarea {
     color: var(--success);
 }
 
-/* Cloud Sync Section */
-.cloud-sync-section {
+/* Storage Mode Section */
+.storage-mode-section {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--glass-border);
 }
 
-.cloud-sync-section .section-header {
-    margin-bottom: 6px;
+.storage-mode-section .section-header {
+    margin-bottom: 8px;
+}
+
+.storage-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.storage-selector input[type="radio"] {
+    display: none;
+}
+
+.storage-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.storage-icon {
+    font-size: 16px;
+}
+
+.storage-selector input[type="radio"]:checked+.storage-option {
+    border-color: var(--primary);
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--text-primary);
+}
+
+.storage-option:hover {
+    background: var(--glass-hover);
 }
 
 .btn-small {
     padding: 6px 10px;
     font-size: 11px;
-}
-
-.cloud-sync-section .rag-status.syncing .rag-dot {
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.4;
-    }
 }

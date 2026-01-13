@@ -136,24 +136,29 @@
             <span id="ragStatusText">Checking server...</span>
           </div>
 
-          <!-- Cloud Sync Section -->
-          <div class="cloud-sync-section">
+          <!-- Storage Mode Section -->
+          <div class="storage-mode-section">
             <div class="section-header">
-              <span class="section-icon">☁️</span>
-              <h2>Cloud Sync</h2>
-              <label class="toggle-switch">
-                <input type="checkbox" id="cloudSyncEnabled">
-                <span class="toggle-slider"></span>
+              <span class="section-icon">💾</span>
+              <h2>Storage Mode</h2>
+            </div>
+            <div class="storage-selector">
+              <input type="radio" name="storageMode" id="storage-local" value="local" checked>
+              <label for="storage-local" class="storage-option">
+                <span class="storage-icon">🖥️</span>
+                <span>Local</span>
+              </label>
+
+              <input type="radio" name="storageMode" id="storage-cloud" value="cloud">
+              <label for="storage-cloud" class="storage-option">
+                <span class="storage-icon">☁️</span>
+                <span>Cloud</span>
               </label>
             </div>
-            <div id="cloudStatus" class="rag-status">
+            <div id="storageStatus" class="rag-status">
               <span class="rag-dot"></span>
-              <span id="cloudStatusText">Not configured</span>
+              <span id="storageStatusText">Checking...</span>
             </div>
-            <button id="syncNowBtn" class="btn btn-outline btn-small" style="display: none;">
-              <span class="btn-icon">🔄</span>
-              <span>Sync Now</span>
-            </button>
           </div>
 
           <div class="form-group">
